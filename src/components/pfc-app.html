@@ -1,0 +1,313 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/polymer/lib/elements/dom-if.html">
+
+<dom-module id="pfc-app">
+  <template>
+
+    <style>
+      :host {
+        display: block;
+        height: 100%;
+      }
+
+      main {
+        height: 100%;
+        position: relative;
+      }
+
+      iron-list {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+      }
+
+      paper-icon-button.login-btn,
+      paper-spinner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: auto;
+        width: 80px;
+        height: 80px;
+      }
+
+      paper-icon-button.login-btn {
+        color: #59f;
+        border-radius: 50%;
+        border: 2px solid;
+      }
+      paper-icon-button.login-btn[connecting] {
+        border-color: transparent;
+      }
+
+      paper-spinner {
+        display: none;
+      }
+      paper-spinner[active] {
+        display: block;
+      }
+
+      .message-container {
+        padding: 16px;
+      }
+      .message-container[mine] {
+        text-align: right;
+      }
+
+      .message {
+        display: inline-block;
+        text-align: left;
+        max-width: 40%;
+        position: relative;
+        padding-left: 56px;
+        box-sizing: border-box;
+      }
+      [mine] .message {
+        padding-left: 0;
+        padding-right: 56px;
+      }
+
+      .message .message-content {
+        background: #fff;
+        border-radius: 5px;
+        padding: 8px;
+        min-width: 234px;
+      }
+
+      .message .message-content .info i {
+        float: right;
+        font-size: 11px;
+      }
+
+      .message .avatar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        background-color: #fff;
+      }
+      [mine] .message .avatar {
+        left: auto;
+        right: 0;
+      }
+
+      #messager {
+        padding: 16px;
+      }
+
+      #chatbox {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding-left: 56px;
+        background: #fff;
+        box-shadow: -12px 0 5px rgba(0, 0, 0, .15);
+      }
+      #chatbox paper-icon-button {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        bottom: 0;
+        margin: auto;
+        color: #59f;
+      }
+      #chatbox input[type="file"] {
+        display: none;
+      }
+
+    </style>
+
+    <main id="main">
+
+      <template is="dom-if" if="[[!user]]">
+        <paper-icon-button class="login-btn" connecting$="[[connecting]]" icon="social:person" on-tap="_signIn"></paper-icon-button>
+        <paper-spinner active="[[connecting]]"></paper-spinner>
+      </template>
+
+      <template is="dom-if" if="[[user]]">
+        <iron-list id="messages" items="[[messages]]" as="message" >
+          <template>
+            <div class="message-container" mine$="[[_eq(message.user.uid, user.uid)]]">
+              <div class="message">
+                <div class="avatar" style$="background-image:url([[message.user.photoURL]])"></div>
+                <div class="message-content">
+                  <div class="info"><b>[[message.user.name]]</b><i>[[_formatDate(message.timestamp)]]</i></div>
+                  <div class="text">[[message.text]]</div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </iron-list>
+        <div id="chatbox">
+          <paper-icon-button icon="attachment" on-tap="_selectFile"></paper-icon-button>
+          <input type="file" id="uploader" on-change="_uploadFile">
+          <paper-textarea no-label-float maxlength="500" max-rows="5" id="messager" on-keydown="_onSend" on-keyup="_resizeChatbox"></paper-textarea>
+        </div>
+      </template>
+
+    </main>
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class PfcApp extends Polymer.Element {
+
+      static get is() { return 'pfc-app'; }
+
+      static get properties() {
+        return {
+          messages: {
+            type: Array,
+            value: []
+          },
+          user: {
+            type: Object,
+            value: false
+          },
+          connecting: {
+            type: Boolean,
+            value: false
+          },
+          offset: {
+            type: Number,
+            value: 50
+          }
+        };
+      }
+
+      static get observers(){
+        return [
+          '_userChanged(user, offset)'
+        ];
+      }
+
+      constructor(){
+        super();
+        firebase.auth().onAuthStateChanged(user => this.user = user || false);
+        window.addEventListener('resize', this._resizeChatbox.bind(this), { passive: true });
+      }
+
+      _onSend(e){
+        if(((e.which || e.keyCode) === 13) && !e.shiftKey){
+          e.preventDefault();
+          return false;
+        }
+      }
+
+      _selectFile(){
+        Polymer.dom(this.root).querySelector('#uploader').click();
+      }
+
+      _uploadFile(e){
+        const files = e.currentTarget.files;
+        if(files && files[0]){
+          const fileKey = `${firebase.database().ref().push().key}_${files[0].name}`;
+          firebase.storage().ref('uploads').child(fileKey).put(files[0], {
+            uid: this.user.uid,
+            name: this.user.displayName,
+            photoURL: this.user.photoURL,
+            key: fileKey
+          })
+            .then((v, x) => console.log(v, x));
+          e.currentTarget.value = "";
+        }
+      }
+
+      _formatDate(date){
+        const d = new Date(date);
+        const day = d.getDate();
+        const month = d.getMonth() + 1;
+        const year = d.getYear();
+        const cd = new Date(date);
+        const cday = cd.getDate();
+        const cmonth = cd.getMonth() + 1;
+        const cyear = cd.getYear();
+        const hours = d.getHours();
+        const mins = d.getMinutes();
+        if(day === cday && month === cmonth && year === cyear) return (hours < 10 ? '0' + hours : hours) + ':' + (mins < 10 ? '0' + mins : mins);
+        else return (day < 10 ? '0' + day : day) + '/' + (month < 10 ? '0' + month : month);
+      }
+
+      _userChanged(user, offset){
+        if(this.messagesRef){
+          this.messagesRef.off();
+          this.messages = [];
+        }
+        if(user && offset){
+          this.messagesRef = firebase.database().ref('/messages');
+          this.messagesRef.limitToLast(offset).on('child_added', v => {
+            this.push('messages', v.val());
+            this.$messages.scrollToIndex(this.messages.length - 1);
+          });
+          this.messagesRef.limitToLast(offset).on('child_changed', v => {
+            const index = this.messages.findIndex(x => x.key === v.key);
+            if(index > -1) this.set(`messages.${index}`, v.val());
+          });
+          setTimeout(this._resizeChatbox.bind(this), 250);
+        }
+      }
+
+      _eq(a, b){
+        return a === b;
+      }
+
+      _resizeChatbox(e){
+        this.$messages = Polymer.dom(this.root).querySelector('#messages');
+        this.$messager = Polymer.dom(this.root).querySelector('#messager');
+        this.$messages.style.height = (this.$.main.clientHeight - this.$messager.clientHeight) + 'px';
+        if(e){
+          const key = e.which || e.keyCode;
+          if(key === 13 && !e.shiftKey) this._sendMessage();
+        }
+      }
+
+      _sendMessage(){
+        const message = this.$messager.value;
+        if(!this.user || typeof message !== "string" || !message.replace(/ |\n|\r|\t/g, '').length) return;
+        this.$messager.value = "";
+        const key = this.messagesRef.push().key;
+        this.messagesRef.child(key).set({
+          type: 'text',
+          text: message,
+          key: key,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          user: {
+            uid: this.user.uid,
+            name: this.user.displayName,
+            photoURL: this.user.photoURL
+          }
+        });
+      }
+
+      _signIn(){
+        this.connecting = true;
+        firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+          .then(_ => this.connecting = false)
+          .catch(_ => this.connecting = false);
+      }
+
+    }
+
+    window.customElements.define(PfcApp.is, PfcApp);
+  </script>
+</dom-module>

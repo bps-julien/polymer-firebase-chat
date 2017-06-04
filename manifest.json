@@ -1,0 +1,6 @@
+{
+  "name": "pfc-app",
+  "short_name": "pfc-app",
+  "start_url": "/",
+  "display": "standalone"
+}
