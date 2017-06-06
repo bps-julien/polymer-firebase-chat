@@ -4,7 +4,7 @@ const functions = require('firebase-functions');
 const firebase = require('firebase-admin');
 const Badwords = require('bad-words');
 const capitalizeSentence = require('capitalize-sentence');
-const gcs = require('@google-cloud/storage')();
+const gcs = require('@google-cloud/storage')({ keyFilename: 'polyfire-chat.json' });
 const vision = require('@google-cloud/vision')();
 
 const badWordsFilter = new Badwords();
@@ -58,11 +58,27 @@ exports.blurOffensiveImages = functions.storage.object().onChange(event => {
   return vision.detectSafeSearch(file).then(data => {
     const safeSearch = data[0];
     if (!safeSearch.adult && !safeSearch.violence) {
+      return file.getSignedUrl({
+        action: 'read',
+        expires: '01-01-2100'
+      }).then(signedUrls => {
+        return firebase.database().ref('messages').child(object.metadata.key).set({
+          key: object.name,
+          type: 'image',
+          url: signedUrls[0],
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          user: {
+            name: object.metadata.name,
+            uid: object.metadata.uid,
+            photoURL: object.metadata.photoURL
+          }
+        });
+      });
+    }
+    else{ 
       return firebase.database().ref('messages').child(object.metadata.key).set({
-        key: object.name,
-        type: 'image',
-        url: object.mediaLink,
-        metadata: object.metadata,
+        type: 'error',
+        text: 'This image has been removed.',
         timestamp: firebase.database.ServerValue.TIMESTAMP,
         user: {
           name: object.metadata.name,
@@ -71,30 +87,5 @@ exports.blurOffensiveImages = functions.storage.object().onChange(event => {
         }
       });
     }
-    else return;
   });
 });
-
-function blurImage(filePath, bucketName, metadata) {
-  const filePathSplit = filePath.split('/');
-  filePathSplit.pop();
-  const fileDir = filePathSplit.join('/');
-  const tempLocalDir = `${LOCAL_TMP_FOLDER}${fileDir}`;
-  const tempLocalFile = `${LOCAL_TMP_FOLDER}${filePath}`;
-  const bucket = gcs.bucket(bucketName);
-  return mkdirp(tempLocalDir).then(() => {
-    return bucket.file(filePath).download({
-      destination: tempLocalFile
-    });
-  }).then(() => {
-    return exec(`convert ${tempLocalFile} -channel RGBA -blur 0x8 ${tempLocalFile}`);
-  }).then(() => {
-    return bucket.upload(tempLocalFile, {
-      destination: filePath,
-      metadata: {
-        metadata: metadata
-      }
-    });
-  })
-  .then(v => console.log(v));
-}

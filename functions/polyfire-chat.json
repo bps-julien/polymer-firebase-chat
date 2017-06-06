@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "polyfire-chat",
+  "private_key_id": "4a7f9599ada96cc6178ab37cba9d6814c0497d01",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC8a6tRFqcVfZjY\nYi3XkoYzYC2gfoy4qciz9MzYqUFFMkZzZj+BSLyW4GpvRMTyy3Xy5IXYo+ifsU5m\n0IlgXy/i0E1Rkd5wSSoY7TF7kjEWR62ZnaIAmIzuIR3Czu8VDvpgpY3+NuqWls3R\nuWLOe4TQkNc1F7GA8wSpiztAIkGrCa/31QatNiPyT1Nuho0BrLk/i1KofuA8p/5k\nLSKLvdlA2wKorUeVg3bAzpcFmXg0GC5yRIULaZxLU9yIk6qYEVzjOt+uapHCnAB5\nHITb4SDUF5tGo7VwvMuo/lKEneMeFoXXZAW+nzs6NXwXcx4myP2dsVBWiYaGFzy4\nJp1XIEtzAgMBAAECggEAKbQlD4YVhj6t2VrlrZybQnzLrIXGDMtbhmUs/9l6fl/R\n0xHzBWD9iOFz/Vu5wcmBujiVXW1t/AaJBV2rwl5fIXMcYe0I0E6JWEoLlT+2yKkl\nxeXraPla3AwNY8Rci4sspL6P7o/mHV2UgZJoSa5yJ52fXHt5iMKBKiuMejX61emm\nGWmlx3p4ktBNV2ChhqqSgXnaJHAMYVZze8sBpTy1sJ2bimebM9v8L+v1hB7XpobY\nH9UNZE1Z3x9h5SJG1rwiNOE+letSbx1xIwQ9Y9BVGE51g5hjT0yIsUiDACOv4S7X\naTHRv4HrEWsGRnE9x9D5gUiJIN7iTQ9FiM3DVYEHEQKBgQDpHDAsftQeBkKrQ5G2\noxW3I4NlPquUxzIgbkeutfSoYJhYCkKPco1/P3T1FmSZlElkPhomAKSyWJ2vuf4v\nj7+TD5cOoNzQtzZ2qajZhQHe8LaP7LA/Q4PjWFvEua52CuJseM74RekEhHO5Xm3f\nA8JOV71IvBiIdURf2hgHZ4S8YwKBgQDO7BjIH+ObLdYaTB5N3vRQDZsYkU97QwGj\nJshi8zVeWbQC1aLo/zpoI7aq6EFptJSDDQJd9ZGvo1MESSiLvJBacCgDXalrsFLn\n6au7ONbbuj+TwWh7RhU7Mgmo/IGre3nDypY8b+t+Pf4ftE7dAqC5Rn/nflhDjr6J\n9Bp++Hg5sQKBgQDoiZYEzQAMc3JOJjlVV5px9ps8hCflYlA+ycP4JMrKrJFMQe/j\n6QH9ze9+DbiM+7+6n7i18C5bOssSYRePmnYg3Yxyq0WbbyiFdvlZA7W6D6YOLK4k\nbdVDFQF2XUQLvQ/h5SGRySuJthc681fnAHj0bdIEnJ5cgZ6Tf5w4xqtCwQKBgAij\ncqVoL2hbEYUniFxX4ns1FjSAXIEY2wikpdj7rk6yEAHOSW7QuO+ADjA0Yga3szuF\nX4PsrJhYiS60nyy2QpCD/iel0Vzdj5h++NxoExA5Rk401NfQpTJDdIPJhuBR11OF\nMaB0S7CJhgJs1J4FbhBOESjo7WZkny/DMRf754kBAoGBAJNQ3RIRKNlx6Gp3n5+7\nEruKNhcU4Crrqw32BQtLVhzmYaG/XxAvF4zzfLt1NXrluIzVuGoTzz9NRhE4f08Y\nLJDQKTph8Y6kc5IHqTGSIIjUf92S8hxjHvsxjjoSautkifdqpWDrK47oREVLRfDV\nMcm/HG2dyRvV+mvkhH4L58f3\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase@polyfire-chat.iam.gserviceaccount.com",
+  "client_id": "117962396888311617399",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase%40polyfire-chat.iam.gserviceaccount.com"
+}

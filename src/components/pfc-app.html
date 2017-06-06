@@ -7,6 +7,7 @@
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="pfc-message.html">
 
 <dom-module id="pfc-app">
   <template>
@@ -84,6 +85,10 @@
         min-width: 234px;
       }
 
+      .message .message-content img {
+        max-width: 100%;
+      }
+
       .message .message-content .info i {
         float: right;
         font-size: 11px;
@@ -141,17 +146,9 @@
       </template>
 
       <template is="dom-if" if="[[user]]">
-        <iron-list id="messages" items="[[messages]]" as="message" >
+        <iron-list id="messages" items="[[messages]]" as="message" on-scroll="_scrollChanged">
           <template>
-            <div class="message-container" mine$="[[_eq(message.user.uid, user.uid)]]">
-              <div class="message">
-                <div class="avatar" style$="background-image:url([[message.user.photoURL]])"></div>
-                <div class="message-content">
-                  <div class="info"><b>[[message.user.name]]</b><i>[[_formatDate(message.timestamp)]]</i></div>
-                  <div class="text">[[message.text]]</div>
-                </div>
-              </div>
-            </div>
+            <pfc-message on-image-load="_imageLoaded" user="[[user]]" message="[[message]]"></pfc-message>
           </template>
         </iron-list>
         <div id="chatbox">
@@ -190,7 +187,15 @@
           },
           offset: {
             type: Number,
-            value: 50
+            value: 10
+          },
+          limit: {
+            type: Number,
+            value: 10
+          },
+          scrolled: {
+            type: Boolean,
+            value: false
           }
         };
       }
@@ -207,6 +212,18 @@
         window.addEventListener('resize', this._resizeChatbox.bind(this), { passive: true });
       }
 
+      _imageLoaded(){
+        this.$messages.notifyResize();
+        if(this._doScroll()) this.$messages.scrollToIndex(this.messages.length - 1);
+      }
+
+      _scrollChanged(e){
+        if(e.currentTarget.scrollTop === 0 && this.messages.length === this.offset){
+          this.offset = this.offset + this.limit;
+        }
+        this.scrolled = true;
+      }
+
       _onSend(e){
         if(((e.which || e.keyCode) === 13) && !e.shiftKey){
           e.preventDefault();
@@ -221,31 +238,22 @@
       _uploadFile(e){
         const files = e.currentTarget.files;
         if(files && files[0]){
-          const fileKey = `${firebase.database().ref().push().key}_${files[0].name}`;
+          const fileKey = this.messagesRef.push().key;
           firebase.storage().ref('uploads').child(fileKey).put(files[0], {
-            uid: this.user.uid,
-            name: this.user.displayName,
-            photoURL: this.user.photoURL,
-            key: fileKey
+            customMetadata: {
+              uid: this.user.uid,
+              name: this.user.displayName,
+              photoURL: this.user.photoURL,
+              key: fileKey
+            }
           })
             .then((v, x) => console.log(v, x));
           e.currentTarget.value = "";
         }
       }
 
-      _formatDate(date){
-        const d = new Date(date);
-        const day = d.getDate();
-        const month = d.getMonth() + 1;
-        const year = d.getYear();
-        const cd = new Date(date);
-        const cday = cd.getDate();
-        const cmonth = cd.getMonth() + 1;
-        const cyear = cd.getYear();
-        const hours = d.getHours();
-        const mins = d.getMinutes();
-        if(day === cday && month === cmonth && year === cyear) return (hours < 10 ? '0' + hours : hours) + ':' + (mins < 10 ? '0' + mins : mins);
-        else return (day < 10 ? '0' + day : day) + '/' + (month < 10 ? '0' + month : month);
+      _doScroll(){
+        return this.messages.length && this.$messages.lastVisibleIndex === this.messages.length - 1;
       }
 
       _userChanged(user, offset){
@@ -255,14 +263,14 @@
         }
         if(user && offset){
           this.messagesRef = firebase.database().ref('/messages');
-          this.messagesRef.limitToLast(offset).on('child_added', v => {
+          this.messagesRef.limitToLast(offset).on('child_added', (v => {
             this.push('messages', v.val());
-            this.$messages.scrollToIndex(this.messages.length - 1);
-          });
-          this.messagesRef.limitToLast(offset).on('child_changed', v => {
+            this._imageLoaded();
+          }).bind(this));
+          this.messagesRef.limitToLast(offset).on('child_changed', (v => {
             const index = this.messages.findIndex(x => x.key === v.key);
             if(index > -1) this.set(`messages.${index}`, v.val());
-          });
+          }).bind(this));
           setTimeout(this._resizeChatbox.bind(this), 250);
         }
       }

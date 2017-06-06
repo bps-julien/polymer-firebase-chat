@@ -1,0 +1,178 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="pfc-message">
+  <template>
+
+    <style>
+      :host {
+        display: block;
+      }
+
+      .message-container {
+        padding: 16px;
+      }
+      .message-container[mine] {
+        text-align: right;
+      }
+
+      .message {
+        display: inline-block;
+        text-align: left;
+        max-width: 40%;
+        position: relative;
+        padding-left: 56px;
+        box-sizing: border-box;
+      }
+      [mine] .message {
+        padding-left: 0;
+        padding-right: 56px;
+      }
+
+      .message .message-content {
+        background: #fff;
+        border-radius: 5px;
+        padding: 8px;
+        min-width: 234px;
+      }
+
+      .message .message-content img {
+        max-width: 100%;
+      }
+
+      .message .message-content .error {
+        font-style: italic;
+        color: #f32;
+        font-size: 12px;
+      }
+
+      .message .message-content .info i {
+        float: right;
+        font-size: 11px;
+      }
+
+      .message .avatar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        background-color: #fff;
+      }
+      [mine] .message .avatar {
+        left: auto;
+        right: 0;
+      }
+
+      #messager {
+        padding: 16px;
+      }
+
+      #chatbox {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding-left: 56px;
+        background: #fff;
+        box-shadow: -12px 0 5px rgba(0, 0, 0, .15);
+      }
+      #chatbox paper-icon-button {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        bottom: 0;
+        margin: auto;
+        color: #59f;
+      }
+      #chatbox input[type="file"] {
+        display: none;
+      }
+
+    </style>
+
+    <div class="message-container" mine$="[[_eq(message.user.uid, user.uid)]]">
+      <div class="message">
+        <div class="avatar" style$="background-image:url([[message.user.photoURL]])"></div>
+        <div class="message-content">
+          <div class="info"><b>[[message.user.name]]</b><i>[[_formatDate(message.timestamp)]]</i></div>
+          <div class="text" id="content"></div>
+        </div>
+      </div>
+    </div>
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class PfcMessage extends Polymer.Element {
+
+      static get is() { return 'pfc-message'; }
+
+      static get properties() {
+        return {
+          message: {
+            type: Object,
+            observer: '_contentChanged'
+          },
+          user: {
+            type: Object
+          }
+        };
+      }
+
+      constructor(){
+        super();
+      }
+
+      _contentChanged(message){
+        switch(message.type){
+          case 'text':
+            this.$.content.innerHTML = message.text;
+            break;
+          case 'image':
+            this.$.content.innerHTML = `<a href="${message.url}" target="_blank">
+              <img src="${message.url}">
+            </a>`;
+            this.$.content.querySelector('img').addEventListener('load', this._imageLoaded.bind(this));
+            break;
+          case 'error':
+            this.$.content.innerHTML = `<span class="error">${message.text}</span>`;
+            break;
+        }
+      }
+
+      _imageLoaded(){
+        this.dispatchEvent(new CustomEvent('image-load'));
+      }
+
+      _formatDate(date){
+        const d = new Date(date);
+        const day = d.getDate();
+        const month = d.getMonth() + 1;
+        const year = d.getYear();
+        const cd = new Date(date);
+        const cday = cd.getDate();
+        const cmonth = cd.getMonth() + 1;
+        const cyear = cd.getYear();
+        const hours = d.getHours();
+        const mins = d.getMinutes();
+        if(day === cday && month === cmonth && year === cyear) return (hours < 10 ? '0' + hours : hours) + ':' + (mins < 10 ? '0' + mins : mins);
+        else return (day < 10 ? '0' + day : day) + '/' + (month < 10 ? '0' + month : month);
+      }
+
+      _eq(a, b){
+        return a === b;
+      }
+
+    }
+
+    window.customElements.define(PfcMessage.is, PfcMessage);
+  </script>
+</dom-module>
