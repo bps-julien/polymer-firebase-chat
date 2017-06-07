@@ -14,12 +14,17 @@ firebase.initializeApp(functions.config().firebase);
 exports.moderator = functions.database.ref('/messages/{messageId}').onWrite(event => {
   const message = event.data.val();
   if (message && !message.sanitized) {
-    const moderatedMessage = moderateMessage(message.text);
-    return event.data.adminRef.update({
-      text: moderatedMessage,
-      sanitized: true,
-      moderated: message.text !== moderatedMessage
-    });
+    if(message.type === "text"){
+      const moderatedMessage = moderateMessage(message.text);
+      return event.data.adminRef.update({
+        text: moderatedMessage,
+        sanitized: true,
+        moderated: message.text !== moderatedMessage
+      }).then(_ => {
+        return sendNotification(message, moderatedMessage.length <= 100 ? moderatedMessage : moderatedMessage.substring(0, 97) + '...');
+      });
+    }
+    else if(message.type === "image") return sendNotification(message, message.url);
   }
 });
 
@@ -49,7 +54,7 @@ function stopShouting(message) {
   return capitalizeSentence(message.toLowerCase()).replace(/!+/g, '.');
 }
 
-exports.blurOffensiveImages = functions.storage.object().onChange(event => {
+exports.filterImages = functions.storage.object().onChange(event => {
   const object = event.data;
   const file = gcs.bucket(object.bucket).file(object.name);
   if (!object.contentType.startsWith('image/') && object.resourceState === 'not_exists') {
@@ -89,3 +94,36 @@ exports.blurOffensiveImages = functions.storage.object().onChange(event => {
     }
   });
 });
+
+function sendNotification(data, content) {
+  const payload = {
+    notification: {
+      title: `${data.user.name} posted`,
+      body: content,
+      icon: data.user.photoURL || '/images/profile_placeholder.png',
+      click_action: `https://${functions.config().firebase.authDomain}`
+    }
+  };
+
+  return firebase.database().ref('fcmTokens').once('value').then(allTokens => {
+    if (allTokens.exists()) {
+      const tokenObjects = allTokens.val();
+      let tokens = Object.keys(tokenObjects);
+      let tokensToUse = [];
+      tokens.map(token => tokenObjects[token] !== data.user.uid && tokensToUse.push(token));
+      return firebase.messaging().sendToDevice(tokensToUse, payload).then(response => {
+        const tokensToRemove = [];
+        response.results.forEach((result, index) => {
+          const error = result.error;
+          if (error) {
+            if (error.code === 'messaging/invalid-registration-token' ||
+                error.code === 'messaging/registration-token-not-registered') {
+              tokensToRemove.push(allTokens.ref.child(tokensToUse[index]).remove());
+            }
+          }
+        });
+        return Promise.all(tokensToRemove);
+      });
+    }
+  });
+}

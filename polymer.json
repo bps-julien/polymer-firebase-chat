@@ -3,5 +3,8 @@
     "rules": [
       "polymer-2"
     ]
-  }
+  },
+  "extraDependencies": [
+    "firebase-messaging-sw.js"
+  ]
 }
